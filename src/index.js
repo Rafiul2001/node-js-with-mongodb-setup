@@ -6,13 +6,13 @@ const app = express()
 app.use(express.json())
 
 let dbClient
-let collection
+let database
 
 // Initialize MongoDB connection and collection
 initializeMongoClient()
-    .then(({ client, db, collection: col }) => {
+    .then(({ client, db }) => {
         dbClient = client
-        collection = col
+        database = db
         console.log("MongoDB connection initialized")
     })
     .catch(error => {
@@ -24,7 +24,8 @@ app.get('/', async (req, res) => {
     try {
         const arr = []
         const query = {}
-        const allUsers = collection.find(query)
+        const users_collection = database.collection("users")
+        const allUsers = users_collection.find(query)
         for await (const doc of allUsers) {
             arr.push(doc)
         }
@@ -39,8 +40,8 @@ app.post('/add', async (req, res) => {
     try {
 
         const newUser = new User(req.body.name, req.body.password, req.body.age, req.body.email)
-        
-        await collection.insertOne(newUser)
+        const users_collection = database.getCollection('users')
+        await users_collection.insertOne(newUser)
         res.send(newUser)
     } catch (error) {
         console.error("Error inserting data into MongoDB:", error)

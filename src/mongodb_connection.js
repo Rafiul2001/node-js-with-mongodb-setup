@@ -4,26 +4,35 @@ dotenv.config();
 
 const uri = process.env.URI;
 const dbName = process.env.DBNAME;
-const collectionName = process.env.COLLECTION_NAME;
+const collectionArray = process.env.COLLECTION_ARRAY;
 
 async function initializeMongoClient() {
     const client = new MongoClient(uri);
     try {
         await client.connect();
         console.log("Connected to MongoDB server");
-        const db = client.db(dbName);
-        const collectionExists = await checkCollectionExists(db, collectionName);
-        if (!collectionExists) {
-            await db.createCollection(collectionName);
-            console.log(`Collection "${collectionName}" created`);
-        }
-        return { client, db, collection: db.collection(collectionName) };
+        const db = client.db(dbName)
+        
+        // For collection array COLLECTION_ARRAY
+        const arrOfCollection = JSON.parse(collectionArray)
+        await checkCollections(arrOfCollection, db)
+    
+        return { client: client, db: db};
     } catch (error) {
         console.error("Error connecting to MongoDB:", error);
         throw error;
     }
 }
 
+async function checkCollections(collArr, db) {
+    collArr.forEach(async (collection) => {
+        let collectionExists = await checkCollectionExists(db, collection);
+        if (!collectionExists) {
+            await db.createCollection(collection);
+            console.log(`Collection "${collection}" created`);
+        }
+    });
+}
 
 async function checkCollectionExists(db, collectionName) {
     const collections = await db.listCollections().toArray();
